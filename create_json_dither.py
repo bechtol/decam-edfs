@@ -10,7 +10,6 @@ import datetime
 import json
 
 import numpy as np
-import pylab as plt
 import pandas as pd
 
 # EDFS footprint
@@ -25,6 +24,8 @@ EDFS = np.rec.fromrecords([
     [56.80, -47.99],
     [63.25, -45.67],
 ],names=['ra','dec'])
+
+
 
 PROGRAM = 'EDFS'
 EXPTIME = 300
@@ -59,6 +60,20 @@ HEX = odict([
     [9, (56.88, -49.15)],
     [10, (57.70, -50.62)],
 ])
+
+DES_SN = odict([
+    ['C1', [54.2743, -27.1116]], #  C1 shallow
+    ['C2', [54.2743, -29.0884]], #  C2 shallow
+    ['C3', [52.6484, -28.1000]], #  C3 deep
+    ['X1', [34.4757, -4.9295 ]], #  X1 shallow
+    ['X2', [35.6645, -6.4121 ]], #  X2 shallow
+    ['X3', [36.4500, -4.6000 ]], #  X3 deep
+    ['S1', [42.8200, 0.0000  ]], #  S1 shallow
+    ['S2', [41.1944, -0.9884 ]], #  S2 shallow
+    ['E1', [7.8744 , -43.0096]], #  E1 shallow
+    ['E2', [9.5000 , -43.9980]], #  E2 shallow
+])
+
 
 # http://www.ctio.noao.edu/noao/content/DECam-What
 RA_GAP = (153 * 0.2637) / 3600. # deg
@@ -95,7 +110,7 @@ def write_json(outfile,data,**kwargs):
         #out.write(header())
         out.write(json.dumps(data,**kwargs))
 
-def create_json():
+def create_edfs_json():
     for ii,(ra,dec) in HEX.items():
         for band,nexp in BANDS.items():
             fields = []
@@ -123,9 +138,34 @@ def create_json():
 
     #return pd.DataFrame(fields)
 
+def create_dessn_json():
+    dirname = 'json_dessn'
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    for f in ['C','S','X','E']:
+        fields = []
+        for name,(ra,dec) in DES_SN.items():
+            if not name.startswith(f): continue
+            for band,nexp in BANDS.items():
+                if band != 'u': continue
+                d = dict(copy.deepcopy(SISPI_DICT))
+                d['object'] = "DES-SN: "+name
+                d['RA'] = ra
+                d['dec'] = dec
+                d['filter'] = band
+                d['seqtot'] = int(nexp//2)
+                d['seqnum'] = 1
+                fields.append(d)
+
+        filename = os.path.join(dirname,'dessn_%s_%s.json'%(f.lower(),band))
+        print("  Writing %s..."%filename)
+        write_json(filename,fields)
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
     args = parser.parse_args()
 
-    create_json()
+    #create_json()
+    create_dessn_json()
