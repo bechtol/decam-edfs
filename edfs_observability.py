@@ -41,6 +41,10 @@ class Target:
         self.time_array = time_array
         self.airmass_array = self.getAirmass(time_array, location)
 
+    #def getOptimalTime(self, time_array, location):
+    #    self.computeAirmassArray(time_array, location)
+    #    return self.time_array[np.argmin(self.airmass_array)]
+
 ##########
         
 def plotAirmass(time_array, airmass_array, **kwargs):
@@ -79,22 +83,39 @@ cerro_tololo = astropy.coordinates.EarthLocation(lat=LAT_CTIO,
                                                  lon=LON_CTIO,
                                                  height=ELEVATION_CTIO*u.m)
 
-target_array = [Target(61.24, -48.42)]
+TARGET_EDFS = False
+if TARGET_EDFS:
+    target_array = [Target(61.24, -48.42)]
+else:
+    target_array = [Target(54.2743, -27.1116, 'C1'),
+                    Target(54.2743, -29.0884, 'C2'),
+                    Target(52.6484, -28.1000, 'C3'),
+                    Target(34.4757, -4.9295, 'X1'),
+                    Target(35.6645, -6.4121, 'X2'),
+                    Target(36.4500, -4.6000, 'X3'),
+                    Target(42.8200, 0.0000, 'S1'),
+                    Target(41.1944, -0.9884, 'S2'),
+                    Target(7.8744, -43.0096, 'E1'),
+                    Target(9.5000, -43.9980, 'E2')]
 
-time_search = astropy.time.Time('2020-10-13 00:00:00', scale='utc')
+time_search = astropy.time.Time('2020-10-17 00:00:00', scale='utc')
+#time_search = astropy.time.Time('2020-10-15 00:00:00', scale='utc')
+#time_search = astropy.time.Time('2020-10-14 00:00:00', scale='utc')
+#time_search = astropy.time.Time('2020-10-13 00:00:00', scale='utc')
 #time_search = astropy.time.Time('2020-10-29 00:00:00', scale='utc')
-time_array = time_search + np.linspace(-12., 12., 96+1) * u.hr
+time_array = time_search + np.linspace(-12., 12., (16 * 24) + 1) * u.hr
 
 for ii, target in enumerate(target_array):
     target.computeAirmassArray(time_array, cerro_tololo)
 
 tick_values = np.linspace(np.min(time_array.decimalyear),
                           np.max(time_array.decimalyear),
-                          5)
+                          24 + 1)
 tick_labels = []
 for tick_value in tick_values:
     time = astropy.time.Time(tick_value, format='decimalyear', scale='utc')
-    tick_labels.append(time.iso.split()[1].split('.')[0])
+    #tick_labels.append(time.iso.split()[1].split('.')[0])
+    tick_labels.append(':'.join(time.iso.split()[1].split(':')[0:2]))
 
 sun_altitude = getSunAltitude(time_array, cerro_tololo)
 moon_altitude = getMoonAltitude(time_array, cerro_tololo)
@@ -106,6 +127,13 @@ plt.fill_between(target.time_array.decimalyear, 1., 2., where=((sun_altitude < -
 plt.axvline(time_search.decimalyear, c='black', ls='-', lw=1)
 for target in target_array:
     plotAirmass(target.time_array.decimalyear, target.airmass_array, c='black', lw=1, alpha=0.25)
+    index = np.argmin(target.airmass_array)
+    optimal_airmass = target.airmass_array[index]
+    optimal_time = target.time_array[index].decimalyear
+    if '1' in target.name:
+        plt.text(optimal_time, optimal_airmass + 0.02, target.name,
+                 horizontalalignment='center', verticalalignment='center')
+    print('%10s: %s'%(target.name, target.time_array[index]))
 plt.xlim(np.min(time_array.decimalyear),
          np.max(time_array.decimalyear))
 plt.ylim(1., 2.)
