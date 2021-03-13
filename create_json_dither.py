@@ -119,7 +119,7 @@ def create_edfs_json():
                 name = 'hex_%i'%(ii)
                 d = dict(copy.deepcopy(SISPI_DICT))
                 d['object'] = "EDFS field: "+name+" dither_%i"%(dither_index)
-                d['RA'] = ra + (DITHER[dither_index][0] / np.cos(dec))
+                d['RA'] = ra + (DITHER[dither_index][0] / np.cos(np.radians(dec)))
                 d['dec'] = dec + DITHER[dither_index][1]
                 d['filter'] = band
                 #d['count'] = int(nexp//2)
